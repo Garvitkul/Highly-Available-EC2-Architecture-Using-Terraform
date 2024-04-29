@@ -109,7 +109,7 @@ resource "aws_launch_configuration" "hyperverge-lc" {
   ebs_optimized               = false
 
   metadata_options {
-    http_put_response_hop_limit = 1
+    http_tokens = "optional"
   }
 
   root_block_device {
@@ -212,14 +212,17 @@ resource "aws_security_group" "hyperverge-alb-sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  
+  
 }
 
 resource "aws_autoscaling_attachment" "hyperverge-asg-attachment-1a" {
-  autoscaling_group_name = aws_autoscaling_group.hyperverge-asg.name
-  alb_target_group_arn   = aws_lb_target_group.hyperverge-tg.arn
+  depends_on              = [aws_lb_target_group.hyperverge-tg]
+  autoscaling_group_name  = aws_autoscaling_group.hyperverge-asg.name
+  lb_target_group_arn     = aws_lb_target_group.hyperverge-tg.arn
 }
 
 resource "aws_autoscaling_attachment" "hyperverge-asg-attachment-1b" {
-  autoscaling_group_name = aws_autoscaling_group.hyperverge-asg.name
-  alb_target_group_arn   = aws_lb_target_group.hyperverge-tg.arn
-}
+  depends_on              = [aws_lb_target_group.hyperverge-tg]
+  autoscaling_group_name  = aws_autoscaling_group.hyperverge-asg.name
+  lb_target_group_arn     = aws_lb_target_group.hyperverge-tg.arn
