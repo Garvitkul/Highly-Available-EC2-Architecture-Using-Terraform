@@ -77,5 +77,6 @@ __________________________________________________________________________
 ![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/8ea67670-77f5-471c-86c9-6a6580c2aaa4)
 ![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/5ceb9997-8c3b-4fca-bf1c-b9e0470722f0)
 ![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/e6f980d6-4451-48c9-a182-59bdf88bdf66)
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/39b1f180-3ec8-441f-9401-cd40e0a78a51)
 
 
