@@ -23,11 +23,22 @@ resource "aws_internet_gateway" "hyperverge-igw" {
   }
 }
 
-resource "aws_subnet" "hyperverge-pub-subnet" {
+resource "aws_subnet" "hyperverge-pub-subnet-1a" {
   vpc_id                  = aws_vpc.hyperverge-vpc.id
   cidr_block              = "10.0.10.0/24"
   availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = false
+  map_public_ip_on_launch = true
+
+  tags = {
+    Company = "hyperverge"
+  }
+}
+
+resource "aws_subnet" "hyperverge-pub-subnet-1b" {
+  vpc_id                  = aws_vpc.hyperverge-vpc.id
+  cidr_block              = "10.0.20.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
 
   tags = {
     Company = "hyperverge"
@@ -47,8 +58,13 @@ resource "aws_route_table" "hyperverge-pub-rt" {
   }
 }
 
-resource "aws_route_table_association" "hyperverge-rt-association" {
-  subnet_id      = aws_subnet.hyperverge-pub-subnet.id
+resource "aws_route_table_association" "hyperverge-rt-assoc-1a" {
+  subnet_id      = aws_subnet.hyperverge-pub-subnet-1a.id
+  route_table_id = aws_route_table.hyperverge-pub-rt.id
+}
+
+resource "aws_route_table_association" "hyperverge-rt-assoc-1b" {
+  subnet_id      = aws_subnet.hyperverge-pub-subnet-1b.id
   route_table_id = aws_route_table.hyperverge-pub-rt.id
 }
 
@@ -58,9 +74,9 @@ resource "aws_security_group" "hyperverge-autoscaling-sg" {
   vpc_id      = aws_vpc.hyperverge-vpc.id
 
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "tcp"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "TCP"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -84,15 +100,16 @@ resource "tls_private_key" "hyperverge-key" {
 
 resource "aws_launch_configuration" "hyperverge-lc" {
   name                        = "hyperverge-lc"
-  image_id                    = "ami-04e5276ebb8451442" // Updated AMI ID
+  image_id                    = "ami-04e5276ebb8451442"
   instance_type               = "t2.micro"
   key_name                    = aws_key_pair.hyperverge-key.key_name
   security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
+  associate_public_ip_address = true
   enable_monitoring           = false
   ebs_optimized               = false
 
   metadata_options {
-    http_tokens = "optional" // Set to optional to enable IMDSv1
+    http_put_response_hop_limit = 1
   }
 
   root_block_device {
@@ -100,21 +117,17 @@ resource "aws_launch_configuration" "hyperverge-lc" {
     volume_size           = 20
     delete_on_termination = true
   }
+
   user_data = <<-EOF
     #!/bin/bash
-
-    # Retrieve instance metadata
     INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
     PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
     MAC_ADDRESS=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
 
-    # Install necessary web server (if required)
-    # For example, if you're using Apache HTTP Server
     sudo yum -y install httpd
     sudo systemctl start httpd
     sudo systemctl enable httpd
 
-    # Create a simple HTML file to display instance information
     cat <<HTML > /var/www/html/index.html
     <!DOCTYPE html>
     <html lang="en">
@@ -132,51 +145,81 @@ resource "aws_launch_configuration" "hyperverge-lc" {
     </html>
     HTML
 
-    # Restart web server to apply changes (if required)
-    # For example, if you're using Apache HTTP Server
     sudo systemctl restart httpd
   EOF
 }
 
-resource "aws_elb" "hyperverge-lb" {
-  name                        = "hyperverge-lb"
-  subnets                     = [aws_subnet.hyperverge-pub-subnet.id]
-  security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
-  instances                   = []
-  cross_zone_load_balancing   = true
-  idle_timeout                = 60
-  connection_draining         = true
-  connection_draining_timeout = 300
-  internal                    = false
-
-  listener {
-    instance_port      = 80
-    instance_protocol  = "http"
-    lb_port            = 80
-    lb_protocol        = "http"
-    ssl_certificate_id = ""
-  }
-
-  health_check {
-    healthy_threshold   = 10
-    unhealthy_threshold = 2
-    interval            = 30
-    target              = "HTTP:80/index.html"
-    timeout             = 5
-  }
-
-  tags = {
-    Company = "hyperverge"
-  }
-}
-
 resource "aws_autoscaling_group" "hyperverge-asg" {
-  desired_capacity          = 1
+  desired_capacity          = 2
   health_check_grace_period = 300
   health_check_type         = "EC2"
   launch_configuration      = aws_launch_configuration.hyperverge-lc.name
-  max_size                  = 2
-  min_size                  = 1
+  max_size                  = 4
+  min_size                  = 2
   name                      = "hyperverge-asg"
-  vpc_zone_identifier       = [aws_subnet.hyperverge-pub-subnet.id]
+  vpc_zone_identifier       = [aws_subnet.hyperverge-pub-subnet-1a.id, aws_subnet.hyperverge-pub-subnet-1b.id]
+}
+
+resource "aws_lb_target_group" "hyperverge-tg" {
+  name     = "hyperverge-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.hyperverge-vpc.id
+
+  health_check {
+    path                = "/"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "hyperverge-lb-listener" {
+  load_balancer_arn = aws_lb.hyperverge-lb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.hyperverge-tg.arn
+  }
+}
+
+resource "aws_lb" "hyperverge-lb" {
+  name               = "hyperverge-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.hyperverge-alb-sg.id]
+  subnets            = [aws_subnet.hyperverge-pub-subnet-1a.id, aws_subnet.hyperverge-pub-subnet-1b.id]
+}
+
+resource "aws_security_group" "hyperverge-alb-sg" {
+  name        = "hyperverge-alb-sg"
+  description = "Security group for Application Load Balancer"
+  vpc_id      = aws_vpc.hyperverge-vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_autoscaling_attachment" "hyperverge-asg-attachment-1a" {
+  autoscaling_group_name = aws_autoscaling_group.hyperverge-asg.name
+  alb_target_group_arn   = aws_lb_target_group.hyperverge-tg.arn
+}
+
+resource "aws_autoscaling_attachment" "hyperverge-asg-attachment-1b" {
+  autoscaling_group_name = aws_autoscaling_group.hyperverge-asg.name
+  alb_target_group_arn   = aws_lb_target_group.hyperverge-tg.arn
 }
