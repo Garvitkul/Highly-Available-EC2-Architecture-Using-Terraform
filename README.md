@@ -52,3 +52,14 @@
 - Overall, this architecture provides a resilient and scalable infrastructure for hosting web applications or services.
 
 **Make sure to have your AWS Access Keys and Secret Keys ready.**
+_______________________________________________________________________
+Steps to create AWS infrastructure using Terraform -
+1. Install Terraform
+2. Craate a directory **HyperVerge**
+3. Now create main.tf and variables.tf files and copy content to the files respectively.
+4. Now run Terraform init
+5. Run Terraform validate to make sure that script has no issues.
+6. Run Terraform apply
+7. Provide credentials.
+8. Your AWS infrastructure is created.
+Make sure to destroy everything if not in use using Terraform destroy command.
