@@ -52,7 +52,7 @@
 - Overall, this architecture provides a resilient and scalable infrastructure for hosting web applications or services.
 
 **Make sure to have your AWS Access Keys and Secret Keys ready.**
-_______________________________________________________________________
+__________________________________________________________________________
 Steps to create AWS infrastructure using Terraform -
 1. Install Terraform
 2. Craate a directory **HyperVerge**
@@ -63,3 +63,19 @@ Steps to create AWS infrastructure using Terraform -
 7. Provide credentials.
 8. Your AWS infrastructure is created.
 Make sure to destroy everything if not in use using Terraform destroy command.
+
+__________________________________________________________________________
+
+**There is one issue with this Terraform script -**
+Due to new IMDSv2 settings in AWS EC2 servers, it is not allowing to fetch instance details using http://169.254.169.254/latest/meta-data/.
+I tried to set up IMDS as IMDSv1 instead of IMDSv2 but it did not work. I just configured this setting manually to **set IMDSv2 as optional.**
+
+__________________________________________________________________________
+**Screenshot of the resources created**
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/0682de35-003f-45d9-88b1-628bbfb1e547)
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/0e8fdad6-059b-4704-8580-c3f06c0a7c9f)
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/8ea67670-77f5-471c-86c9-6a6580c2aaa4)
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/5ceb9997-8c3b-4fca-bf1c-b9e0470722f0)
+![image](https://github.com/Garvitkul/Highly-Available-EC2-Architecture-Using-Terraform/assets/83578615/e6f980d6-4451-48c9-a182-59bdf88bdf66)
+
+
