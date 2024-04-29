@@ -1,7 +1,7 @@
 provider "aws" {
   region     = "us-east-1"
-  access_key = "${var.aws_access_key}"
-  secret_key = "${var.aws_secret_key}"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
 }
 resource "aws_vpc" "hyperverge-vpc" {
     cidr_block           = "10.0.0.0/16"
@@ -13,13 +13,13 @@ resource "aws_vpc" "hyperverge-vpc" {
     }
 }
 resource "aws_internet_gateway" "hyperverge-igw" {
-    vpc_id = "${aws_vpc.hyperverge-vpc.id}"
+    vpc_id = aws_vpc.hyperverge-vpc.id
     tags = {
         Company = "hyperverge"
     }
 }
 resource "aws_subnet" "hyperverge-pub-subnet" {
-    vpc_id                  = "${aws_vpc.hyperverge-vpc.id}"
+    vpc_id                  = aws_vpc.hyperverge-vpc.id
     cidr_block              = "10.0.10.0/24"
     availability_zone       = "us-east-1a
     map_public_ip_on_launch = false
@@ -28,23 +28,23 @@ resource "aws_subnet" "hyperverge-pub-subnet" {
     }
 }
 resource "aws_route_table" "hyperverge-pub-rt" {
-    vpc_id     = "${aws_vpc.hyperverge-vpc.id}"
+    vpc_id     = aws_vpc.hyperverge-vpc.id
     route {
         cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.hyperverge-igw.id}"
+        gateway_id = aws_internet_gateway.hyperverge-igw.id
     }
     tags = {
         Company = "hyperverge"
     }
 }
 resource "aws_route_table_association" "hyperverge-rt-association" {
-  subnet_id      = "${aws_subnet.hyperverge-pub-subnet.id}"
-  route_table_id = "${aws_route_table.hyperverge-pub-rt.id}"
+  subnet_id      = aws_subnet.hyperverge-pub-subnet.id
+  route_table_id = aws_route_table.hyperverge-pub-rt.id
 }
 resource "aws_security_group" "hyperverge-autoscaling-sg" {
     name        = "hyperverge-autoscaling-sg"
     description = "AutoScaling-Security-Group-1"
-    vpc_id      = "${aws_vpc.hyperverge-vpc.id}
+    vpc_id      = aws_vpc.hyperverge-vpc.id
     ingress {
         from_port       = 0
         to_port         = 0
@@ -63,7 +63,7 @@ resource "aws_launch_configuration" "hyperverge-lc" {
     image_id                    = "ami-04b70fa74e45c3917"
     instance_type               = "t2.micro"
     key_name                    = "hyperverge-key"
-    security_groups             = ["${aws_security_group.hyperverge-autoscaling-sg.id}"]
+    security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
     enable_monitoring           = false
     ebs_optimized               = false
     root_block_device {
@@ -74,8 +74,8 @@ resource "aws_launch_configuration" "hyperverge-lc" {
 }
 resource "aws_elb" "hyperverge-lb" {
     name                        = "hyperverge-lb"
-    subnets                     = ["${aws_subnet.hyperverge-pub-subnet.id}"]
-    security_groups             = ["${aws_security_group.hyperverge-autoscaling-sg.id}"]
+    subnets                     = [aws_subnet.hyperverge-pub-subnet.id]
+    security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
     instances                   = []
     cross_zone_load_balancing   = true
     idle_timeout                = 60
@@ -104,11 +104,11 @@ resource "aws_autoscaling_group" "hyperverge-asg" {
     desired_capacity          = 1
     health_check_grace_period = 300
     health_check_type         = "EC2"
-    launch_configuration      = "${aws_launch_configuration.hyperverge-lc.name}"
+    launch_configuration      = aws_launch_configuration.hyperverge-lc.name
     max_size                  = 2
     min_size                  = 1
     name                      = "hyperverge-asg"
-    vpc_zone_identifier       = ["${aws_subnet.hyperverge-pub-subnet.id}"]
+    vpc_zone_identifier       = [aws_subnet.hyperverge-pub-subnet.id]
     tag = [
       {
         key   = "Company"
