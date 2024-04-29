@@ -86,6 +86,42 @@ resource "aws_launch_configuration" "hyperverge-lc" {
     volume_size           = 20
     delete_on_termination = true
   }
+  user_data = <<-EOF
+    #!/bin/bash
+
+    # Retrieve instance metadata
+    INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+    PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+    MAC_ADDRESS=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
+
+    # Install necessary web server (if required)
+    # For example, if you're using Apache HTTP Server
+    # sudo yum -y install httpd
+    # sudo systemctl start httpd
+    # sudo systemctl enable httpd
+
+    # Create a simple HTML file to display instance information
+    cat <<HTML > /var/www/html/index.html
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Instance Information</title>
+    </head>
+    <body>
+      <h1>Instance Information</h1>
+      <p><strong>Instance ID:</strong> $INSTANCE_ID</p>
+      <p><strong>IP Address:</strong> $PRIVATE_IP</p>
+      <p><strong>MAC Address:</strong> $MAC_ADDRESS</p>
+    </body>
+    </html>
+    HTML
+
+    # Restart web server to apply changes (if required)
+    # For example, if you're using Apache HTTP Server
+    # sudo systemctl restart httpd
+  EOF
 }
 
 resource "aws_elb" "hyperverge-lb" {
