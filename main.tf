@@ -72,14 +72,28 @@ resource "aws_security_group" "hyperverge-autoscaling-sg" {
   }
 }
 
+resource "aws_key_pair" "hyperverge-key" {
+  key_name   = "hyperverge-key"
+  public_key = tls_private_key.hyperverge-key.public_key_openssh
+}
+
+resource "tls_private_key" "hyperverge-key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
 resource "aws_launch_configuration" "hyperverge-lc" {
   name                        = "hyperverge-lc"
-  image_id                    = "ami-0fe630eb857a6ec83"
+  image_id                    = "ami-04e5276ebb8451442" // Updated AMI ID
   instance_type               = "t2.micro"
-  key_name                    = "hyperverge-key"
+  key_name                    = aws_key_pair.hyperverge-key.key_name
   security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
   enable_monitoring           = false
   ebs_optimized               = false
+
+  metadata_options {
+    http_tokens = "optional" // Set to optional to enable IMDSv1
+  }
 
   root_block_device {
     volume_type           = "gp2"
