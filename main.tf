@@ -96,9 +96,9 @@ resource "aws_launch_configuration" "hyperverge-lc" {
 
     # Install necessary web server (if required)
     # For example, if you're using Apache HTTP Server
-    # sudo yum -y install httpd
-    # sudo systemctl start httpd
-    # sudo systemctl enable httpd
+    sudo yum -y install httpd
+    sudo systemctl start httpd
+    sudo systemctl enable httpd
 
     # Create a simple HTML file to display instance information
     cat <<HTML > /var/www/html/index.html
@@ -120,7 +120,7 @@ resource "aws_launch_configuration" "hyperverge-lc" {
 
     # Restart web server to apply changes (if required)
     # For example, if you're using Apache HTTP Server
-    # sudo systemctl restart httpd
+    sudo systemctl restart httpd
   EOF
 }
 
