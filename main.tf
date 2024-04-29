@@ -74,7 +74,7 @@ resource "aws_security_group" "hyperverge-autoscaling-sg" {
 
 resource "aws_launch_configuration" "hyperverge-lc" {
   name                        = "hyperverge-lc"
-  image_id                    = "ami-04b70fa74e45c3917"
+  image_id                    = "ami-0fe630eb857a6ec83"
   instance_type               = "t2.micro"
   key_name                    = "hyperverge-key"
   security_groups             = [aws_security_group.hyperverge-autoscaling-sg.id]
